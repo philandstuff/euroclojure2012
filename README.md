@@ -457,4 +457,252 @@
   - could I use this on my own external DSLs?
     - have no idea, give it a go!
 
+# Meikel Brandmeyer, lazy-seq: a historic view
+
+- who remembers lazy-cons? (not me!)
+- a sequence is:
+  - a thing with a first and a rest
+  - or nil
+  - no such thing as empty sequence!
+- `(cons :a (cons :b nil)) => (:a :b)`
+- but why do we need to know the tail at construction time?
+- `(lazy-cons :a (lazy-cons :b nil))`
+  - computation of tail is deferred until needed
+- allows infinite lazy seqs:
+  - `(defn numbers [n] (lazy-cons n (numbers (inc n))))`
+- elegant recursive style, without stack overflows
+- don't hold the head!
+- is a list a sequence?
+  - what about the empty list?
+  - (seq ()) => nil, but is () itself a sequence?
+- so what is a sequence?
+  - it's a view on a collection, not a collection in itself
+  - similar to iterators, but immutable
+- Seqable
+  - responds to `seq`
+- some seqables respond directly to `first` and `rest`
+  - `(first "abcd") => \a`
+  - but is a string a seq?
+  - again, the empty string is not...
+  - beware the implicit seq
+- seq generators
+  - `iterate`, `repeat`, `repeatedly`...
+  - `cycle`
+  - `concat`
+
+## A historic cut: it all changed
+
+- Problem: `lazy-cons` returns a sequence
+  - no possiblity for a lazy `drop`: do you return a `lazy-cons` or
+    `nil`?
+- Solution: delay even creating the sequence
+  - `(lazy-seq (cons :a nil))` rather than `(lazy-cons :a nil)`
+  - to realize it, we call `seq` on it
+- the sequence interface: `first` and `next`
+  - extended with `rest`: the unrealized tail sequence
+  - where we require that `(comp seq rest)` == `next`
+- Now there is such a thing as an empty sequence
+- `seq` is not the identity fn on seqs anymore
+- promotion to a logical collection
+- This allows full laziness, but at the cost of nil punning
+- so is this still a sequence?
+  - `(lazy-cons :first :next)`
+  - `(lazy-seq :seq)`
+- lazy-seq is not a sequence!
+  - but it is a Seqable
+- Thought experiment:
+  - what if.. `(map f [1 2 3])` returned a vector?
+    - not lazy anymore
+    - but what we returned a "lazy vector"?
+    - still get vector interface, but delay application of f until
+      first access
+  - such a lazy map implementation exists, apparently
+- recent development: reducers
+  - a new view on a collection: a Reducible
+  - keeps knowledge about original input
+  - reducers act on Reducibles
+  - delay computation til reduction
+  - but then it's all or nothing
+- will this replace lazy-seq?
+  - probably not. infinite seqs don't work in reducers
+  - also, non-"all or nothing" situations
+
+
+# Rich Hickey, Reducers
+
+- Motivation
+  - 10 years ago, if you wanted your software to go faster, you just
+    waited for the next gen processor, and hey presto! your programs
+    run faster!
+  - now, clock speeds are stuck, so if we want to benefit from new
+    hardware, we need to exploit the addition of more cores
+  - performance view reduced allocation, via parallelism (leverage
+    fork/join)
+- inspirations
+  - haskell iteratees
+  - guy steele's ICFP 2009 talk
+- where we are right now
+  - FP history
+    - primacy of lists and recursion
+    - clojure has seqs and laziness
+    - *inherently* sequential
+- where we are going
+  - more cores. speedups must come from parallelism
+- model evolution
+  - loops
+  - HOFs on lists
+  - HOFs on collections (via Seqable)
+  - collection independence
+  - order independence (ie avoid sequentiality)
+- `map` does too much
+  - `(defn map [f coll] (cons (f (first coll)) (map f (rest coll))))`
+  - recursion
+  - order
+  - laziness
+  - consumes list
+  - builds list
+- reduce lets collection drive
+  - `(defn reduce [f init coll] (clojure.core.protocols/coll-reduce
+    coll f init))`
+  - has been implemented as a protocol since 1.4!
+  - ignorant of collection structure
+  - can build anything
+  - not lazy
+  - still ordered, left fold with seed
+- how to make map et al collection ignorant?
+  - build up from reduce
+  - without depending on order
+    - because map/filter don't, fundamentally
+  - what to build? - nothing!
+- Reduction Transformers
+  - instead of making new concrete collection, change what reduce
+    means for collection, by modifying the supplied reducing function
+  - seems to be solving a similar problem to laziness in seqs
+  - eg mapping
+    - `(defn mapping [f]
+        (fn [f1]
+         (fn [result input] (f1 result (f input)))))`
+    - no longer care about:
+      - order
+      - recursion
+      - building result
+      - consuming input
+- summary of reducers in terms of `reduce`
+  - This is all great, has reduced complexity
+  - but reduce is still sequential
+  - some perf gains due to less allocation
+- parallelism comes from fold:
+  - fold is order independent
+  - not like foldl, foldr, reduce
+  - a potentially parallel reduction
+  - uses reduce/combine strategy
+    - fork/join under the hood
+    - http://docs.oracle.com/javase/tutorial/essential/concurrency/forkjoin.html
+  - like reduce, asks collection to do the work via protocol
+  - segment the collection, reduce parts, combine
+- reducing leaves
+  - need initial values, get from reducing fn
+  - eg (+) == 0
+- folders
+  - if a collection is foldable, so is reducer
+  - as long as transformer doesn't care about order
+    - map/filter work, take doesn't
+- build map, filter et al as reducers
+- now independent of collection of order
+- so if fold is parallel, so are the ops
+  - No parallel collections
+  - No parallel ops
+  - parallelism isn't a property of a collection, it's a property of
+    the algorithm
+- demo
+  - existing reduce/map: slow
+  - existing reduce with reducers map: faster
+  - fold with reducers map: fastest
+- Q&A
+  - how do you decide what size the smallest chunks should be?
+    - difficult, because it depends on the amount of work the reducing
+      fn does
+
+# Nick Rothwell, Quil and Overtone stuff
+
+- History:
+  - Nick's stuff
+    - Duplex(2002), software for designing choreography
+    - massive drum machine project, python, max/msp
+  - John Whitney, Catalog(1961)
+    - digital art pioneer
+  - Max/MSP, Jitter
+  - Processing
+    - very imperative
+  - Quil
+    - based on clj-processing
+    - still rather imperative
+- Python for digital art
+  - clearly very capable
+  - but difficulties arise from:
+    - imperative nature
+- given a similar project, attempt to use clojure instead
+  - "Whitney Reloaded"
+  - still quite imperative
+  - using generator fns which return a different value each time
+    called
+    - eg sawtooth wave generator
+    - but using the same generator twice without saving value will
+      cycle through it twice as fast
+  - use continuation passing to manage time-variant behaviour
+
+# Lightning talks
+
+## Robert Rees, Ill-informed opinions and whining
+
+- Docstrings are useless
+  - what might be better?
+    - clear code!
+    - documentation online (doc-url)
+- Private is pointless
+  - functional functions don't need to be hidden
+  - nor does immutable data
+  - doesn't work the way you think
+- Namespace aliasing
+- Where does state boling?
+  - in the earmuffs?
+  - in the `with-`wrapper?
+  - either in ns user, or in main
+- Exceptions suck!
+  - eg clj-http throwing exceptions on 404 :(
+- Mocking?
+- Code is data
+  - except in build and deployment
+  - it's all XML and jars
+- Naming:
+  - use longer, descriptive names
+- Stop doing stuff!
+  - don't use macros, protocols, multimethods, records
+  - you should only use them when you can't possibly manage without!
+
+
+## Sam Newman, Riemann
+
+- the c10k problem (10k concurrent connections)
+  - nginx
+  - tornado - python
+  - node.js
+  - netty
+- 1 connection != 1 thread
+- netty
+  - server which can handle lots of connections
+  - could be http or mail or whatever
+- riemann
+  - monitoring kind of thingy
+  - lots of clients feed into riemann server
+  - alerting - use email destination
+  - graphs - use graphite destination
+- why not just use graphite?
+  - Riemann can handle the volumes, and do preprocessing before
+    graphite
+- production ready!
+
+## Hubert Iwaniuk, an asynchronous HTTP client library
+
+
 
