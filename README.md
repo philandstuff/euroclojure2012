@@ -395,3 +395,66 @@
   - clojure state model, finished
     - incorporating time + durability
   
+# Christophe Grand, Not So Homoiconic
+
+- if clojure is homoiconic, why do we have so much source-as-text to
+  source-as-text transformations?
+- macros are a start
+  - but only works for the compiler
+- what you see is not what the reader sees
+  - homoiconicity is designed for the compiler, not for the user
+- "The reader ate my layout"
+  - indentation/whitespace
+  - comments
+  - maps and set orderings
+  - metadata
+  - ::autoresolving/keywords
+  - reader macros - ` ~ ~@
+  - #(%1 %2)
+  - @#'
+  - 0xffff vs decimal equivalent
+- Spoilt devs!
+  - macro transformations are easy
+  - we want structural transformations to be as easy
+- we need to admit we have a view-update problem
+  - originally a DB term
+- transform source -> target, edit target, transform updated target ->
+  updated source
+  - but read is not bijective for reasons stated above
+  - so we fake it by recombining old source with new target
+- "lenses"
+  - composable
+  - bidirectional - get/putback
+  - this might be overthinking things, but it's interesting
+  - the "get" fn won't change, it's the reader. no need for lenses and
+    lens combinators
+  - "putback" is the important idea here
+- master plan
+  - source -> parse tree           - DONE! :D
+  - parse tree -> expr + tx log    - EASY! :D
+  - expr -> expr2                  - USER! not my problem! :D
+  - expr2 + tx log -> parse tree 2 - putback - this is the real problem
+  - parse tree 2 -> source 2       - EASY! :D
+- parse tree != sexpr
+  - parse tree includes whitespace, among other things
+- tx log
+  - for each node/location of parse-tree, remember corresponding
+    expression
+  - we need to be able to scan tx log to find closest parse-tree node
+    corresponding to an expr
+  - when not found, render expression using default algorithm eg
+    pprint
+- decouple layout transformations from structural transformations
+- demo time!
+  - in counterclockwise!
+  - this is bloody brilliant.
+- WIP
+  - similarity heuristics to recover more layout on updated nodes
+  - IDE integration
+- Q&A
+  - are you aware of operational transforms?
+    - yes, they are problematic for reasons I don't understand
+  - could I use this on my own external DSLs?
+    - have no idea, give it a go!
+
+
