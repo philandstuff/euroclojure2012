@@ -704,5 +704,138 @@
 
 ## Hubert Iwaniuk, an asynchronous HTTP client library
 
+## Chris Ford, Overtone stuff
+
+- Western music notation is another language
+  - the JVM of music is a musician
+- a canon is a tune played along with a transformation of itself
+
+# Bruce Durling, Quick and Dirty Time Series Analysis with Clojure and Incanter
+
+- step 0
+  - log files! databases! APIs! oh my!
+- step 1
+  - ETL (wtf is ETL?) Entity Transformation Language table row ->
+    different table row
+  - cascalog, hadoop, whatever
+- step 2
+  - live coding!
+  - seasonal means, alerting, selecting, constraining
+
+# Hugo Duncan, Functional server management with Pallet
+
+- Scripts executed over ssh, or clojure executed locally (useful for
+  external APIs)
+- VM provisioning
+- stateless library
+  - no db
+  - no agents on nodes, only need ssh and bash
+  - no server (no temporal model)
+    - unlike puppetmaster being polled by nodes
+    - pallet is a push model
+  - broader scope than chef, puppet
+    - vm provisioning
+    - configuration management
+    - deployment
+    - orchestration
+- Infrastructure Automation is not just for ops
+- Want to aspire to single sources of truth for configuration
+  - eg, deploy webapp and database to single vm in dev, but to
+    separate machines in prod.
+- remote-file : idempotent creation of files
+- stevedore: abstraction to get alternative bash scripts for different
+  OSes
+
+
+# Malcolm Sparks, Interactive websites with Clojure, ClojureScript and REST
+
+- Deutsche Bank experience
+- open data:
+  - data.gov, data.gov.uk, freebase, openstreetmap
+- application server: a device which complects data with presentation
+- data is often jailed behind sucky interfaces
+- a "data server" - actually serve up the data, don't present it
+- clojure and REST share values:
+  - immutability scales
+  - general interfaces better than specific
+- REST library provides
+  - status determination
+  - content negotiation
+  - cache negotiation
+  - can we do this in ring middleware? no, because:
+  - HTTP is nonlinear
+- REST library options
+  - plugboard (abandoned)
+  - ordnungswidrig/compojure-rest
+  - tnr-global/bishop
+  - BankSimple ClothesLine
+- compojure-rest
+  - routing library agnostic - doesn't do this
+  - status determination, content negotiation
+- hello world example
+
+# Robert Rees & Devin Walters, Communal Clojure
+
+- London Clojurians
+  - Founded: 2010
+  - monthly meets
+  - organized by small committee
+  - core activities: code dojos, talks
+  - tools: mailing list, github
+- Berlin Clojure User Group
+- etc etc..
+- dojo problems:
+  - Clork, an adventure game
+    - a year's worth of problems!
+- Sponsorship
+  - venues! TW, skillsmatter, forward
+  - food and drink
+    - claim as "recruitment budget"
+  - volunteer time
+- what we could do better
+  - communication
+    - upcoming plans
+    - archiving what we've done
+  - providing for expert community as well as beginner
+  - host regular talks
+- MadClojure (Madison, WI)
+  - founded: 2010
+  - meets monthly
+  - 5-10
+  - organized by Devin Walters
+  - core activities: Discussion, Tangents
+  - tools: smart people, whiteboards, parens, free beer
+- Sponsorship
+  - Bendyworks
+    - beer, cheese
+    - venue
+    - moral support
+- What we're good at
+  - unorganization
+  - free-flowing discussion with a Clojure substrate
+  - Being inclusive and exclusive
+- What we could do better
+  - more organization
+  - beginner material
+  - dojo!
+  - 4clojure! (sort by number of times solved to get idea of difficulty)
+  - have more hack days
+  - more "effective badgering"
+- Don't ask to ask. Just ask.
+- Don't ask.
+- Don't be discouraged, Don't get angry
+- Q&A:
+  - what is a community?
+    - someone to learn from
+    - someone to teach
+    - a group of people that:
+      - does things
+      - welcomes new people
+  - antipattern: comp.lang.lisp
+    - trolls
+    - smart people working alone
+  - encourage cameraderie
+    - don't let people beat up on other languages (ie Scala)
+      - can learn from each other
 
 
